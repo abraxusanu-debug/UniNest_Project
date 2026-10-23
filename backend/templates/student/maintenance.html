@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Maintenance{% endblock %}
+{% block content %}
+<h1 class="page-title">Maintenance requests</h1>
+<p class="page-sub">Report hostel issues for your allocated room. The office tracks progress and notifies you when resolved.</p>
+
+<div class="card" style="max-width:620px">
+  <div class="card-title">New request</div>
+  <form method="post" class="stack">
+    <div class="field">
+      <label for="title">Issue</label>
+      <input type="text" id="title" name="title" placeholder="e.g. Leaking tap" required>
+    </div>
+    <div class="field">
+      <label for="description">Details</label>
+      <textarea id="description" name="description" placeholder="What is wrong, where exactly?"></textarea>
+    </div>
+    <div class="grid cols-2" style="gap:12px">
+      <div class="field">
+        <label for="priority">Priority</label>
+        <select id="priority" name="priority">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="allocation_id">Room</label>
+        <select id="allocation_id" name="allocation_id">
+          {% if allocations %}
+            {% for a in allocations if a.status in ["allocated", "checked_in"] %}
+            <option value="{{ a.id }}">{{ a.bed.room.hostel.name }} · room {{ a.bed.room.number }}</option>
+            {% endfor %}
+          {% endif %}
+          {% if allocations|selectattr("status", "in", ["allocated", "checked_in"])|list|length == 0 %}
+          <option value="">(no active room)</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="submit">Submit request</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">My requests</div>
+  {% if requests %}
+  <table class="table">
+    <tr><th>Issue</th><th>Priority</th><th>Status</th><th>Room</th><th>Filed</th><th>Resolution</th></tr>
+    {% for r in requests %}
+    <tr>
+      <td>{{ r.title }}{% if r.description %}<div class="muted small">{{ r.description }}</div>{% endif %}</td>
+      <td><span class="pill {{ r.priority }}">{{ r.priority }}</span></td>
+      <td><span class="pill {{ r.status }}">{{ r.status|replace('_',' ') }}</span></td>
+      <td class="small">{{ r.room and r.room.hostel ~ " " ~ r.room.room or "—" }}</td>
+      <td class="muted small nowrap">{{ r.created_at.strftime("%d %b") }}</td>
+      <td class="muted small">{{ r.resolution_note or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No maintenance requests yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

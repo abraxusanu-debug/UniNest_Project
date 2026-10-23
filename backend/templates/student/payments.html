@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}My payments{% endblock %}
+{% block content %}
+<h1 class="page-title">Payment centre</h1>
+<p class="page-sub">Pay your accommodation fees quickly and keep your room status up to date with one transparent record.</p>
+
+<div class="card" style="max-width:620px">
+  <div class="card-title">Record a payment</div>
+  <form method="post" class="stack">
+    <div class="field">
+      <label for="amount">Amount (KSh)</label>
+      <input type="number" id="amount" name="amount" min="1" step="0.01" placeholder="e.g. 14500" required>
+    </div>
+    <div class="field">
+      <label for="phone_number">Phone number for M-Pesa prompt</label>
+      <input type="tel" id="phone_number" name="phone_number" placeholder="e.g. 254712345678" value="{{ current_user.student.phone or '' }}">
+    </div>
+    <div class="field">
+      <label for="allocation_id">Allocation</label>
+      <select id="allocation_id" name="allocation_id">
+        <option value="">Not linked to any allocation</option>
+        {% for a in allocations %}
+        <option value="{{ a.id }}">{{ a.bed.room.hostel.name }} · room {{ a.bed.room.number }} · bed {{ a.bed.bed_number }} ({{ a.status|replace('_',' ') }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="semester">Semester</label>
+      <input type="text" id="semester" name="semester" value="2026 Semester 1">
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="submit">Send M-Pesa prompt</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">My payment records</div>
+  {% if payments %}
+  <table class="table">
+    <tr><th>Reference</th><th>Amount</th><th>Method</th><th>Allocation</th><th>Status</th><th>Recorded</th></tr>
+    {% for p in payments %}
+    <tr>
+      <td class="nowrap"><code class="small">{{ p.reference }}</code></td>
+      <td class="num nowrap">{{ p.currency }} {{ "%.2f"|format(p.amount) }}</td>
+      <td>{{ p.method|capitalize }}</td>
+      <td>{{ p.allocation_id and "#" ~ p.allocation_id or "—" }}</td>
+      <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
+      <td class="muted small nowrap">{{ p.created_at.strftime("%d %b %Y") }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No payment records yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

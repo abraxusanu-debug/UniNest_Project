@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Hostels{% endblock %}
+{% block content %}
+<h1 class="page-title">Hostels, rooms & beds</h1>
+<p class="page-sub">Set up hostels, add rooms with a bed count per room, and flag beds under maintenance.</p>
+
+<div class="card">
+  <div class="card-title">Add hostel</div>
+  <form method="post" action="{{ url_for('web.admin_create_hostel') }}" class="stack" enctype="multipart/form-data">
+    <div class="grid cols-4" style="gap:10px">
+      <div class="inline-form" style="flex:2">
+        <div class="field" style="width:100%"><label>Name</label><input type="text" name="name" placeholder="e.g. Nanyuki Hall" required></div>
+      </div>
+      <div class="field"><label>Gender</label>
+        <select name="gender"><option value="mixed">Mixed</option><option value="female">Female</option><option value="male">Male</option></select>
+      </div>
+      <div class="inline-form" style="flex:2">
+        <div class="field" style="width:100%"><label>Location</label><input type="text" name="location" placeholder="e.g. North Campus"></div>
+      </div>
+      <div class="field" style="display:flex; align-items:flex-end"><button class="btn primary" type="submit">Add hostel</button></div>
+    </div>
+    <div class="grid cols-3" style="gap:10px">
+      <div class="field"><label>Image URL</label><input type="url" name="image_url" placeholder="https://images.example.com/hostel.jpg"></div>
+      <div class="field"><label>Upload image</label><input type="file" name="image_file" accept="image/*"></div>
+      <div class="field"><label>Amenities</label><input type="text" name="amenities" placeholder="Wi-Fi, laundry, study lounge, shared kitchen"></div>
+    </div>
+    <div class="field"><label>Description</label><textarea name="description" placeholder="Describe the residence, atmosphere, and what students can expect."></textarea></div>
+  </form>
+</div>
+
+{% for h in overview %}
+<div class="card">
+  <div class="btn-row" style="justify-content: space-between">
+    <div>
+      <div class="card-title" style="margin:0">{{ h.name }} <span class="pill low">{{ h.gender|capitalize }}</span></div>
+      <div class="muted small mt-8" style="margin-top:6px">{{ h.location }} · {{ h.rooms_count }} rooms · {{ h.beds_available }} free / {{ h.beds_total }} beds{% if h.beds_maintenance %} · {{ h.beds_maintenance }} under maintenance{% endif %}</div>
+    </div>
+    <form method="post" action="{{ url_for('web.admin_delete_hostel', hostel_id=h.id) }}">
+      <button class="btn sm danger" type="submit" data-confirm="Delete {{ h.name }} and all its rooms/beds? Only possible with no occupied beds.">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="card tight">
+  <div class="card-title">Rooms</div>
+  <table class="table">
+    <tr><th>Room</th><th>Floor</th><th>Type</th><th>Beds (by number)</th><th class="right">Actions</th></tr>
+    {% for r in h.rooms %}
+    <tr>
+      <td><strong>{{ r.number }}</strong></td>
+      <td>{{ r.floor or "—" }}</td>
+      <td>{{ r.room_type|capitalize }}</td>
+      <td>
+        {% if r.beds %}
+        <div class="btn-row">
+          {% for b in r.beds %}
+            <span class="pill {{ b.status }}">{{ b.bed_number }}</span>
+          {% endfor %}
+        </div>
+        {% else %}<span class="muted small">no beds yet</span>{% endif %}
+      </td>
+      <td class="right nowrap">
+        <div class="btn-row" style="justify-content:flex-end">
+          <form method="post" action="{{ url_for('web.admin_add_beds', room_id=r.id) }}" class="inline-form">
+            <div class="field" style="width:74px"><input type="number" name="count" value="1" min="1" max="30"></div>
+            <button class="btn sm" type="submit">Add beds</button>
+          </form>
+          {% if r.beds %}
+            {% for b in r.beds %}
+            {% endfor %}
+          {% endif %}
+          <form method="post" action="{{ url_for('web.admin_room_delete', room_id=r.id) }}">
+            <button class="btn sm" type="submit" data-confirm="Delete room {{ r.number }}? Only if no occupied beds.">Delete</button>
+          </form>
+        </div>
+        <div class="btn-row mt-8" style="justify-content:flex-end">
+          {% for b in r.beds %}
+            {% if b.status != 'occupied' %}
+            <form method="post" action="{{ url_for('web.admin_bed_status', bed_id=b.id) }}" class="inline-form">
+              <input type="hidden" name="status" value="{{ 'available' if b.status == 'maintenance' else 'maintenance' }}">
+              <button class="btn sm" type="submit">{{ 'Mark available' if b.status == 'maintenance' else 'Mark maintenance' }}</button>
+            </form>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="mt-16">
+    <form method="post" action="{{ url_for('web.admin_create_room', hostel_id=h.id) }}" class="inline-form">
+      <div class="field" style="width:110px"><label>Room no.</label><input type="text" name="number" placeholder="101" required></div>
+      <div class="field" style="width:100px"><label>Floor</label><input type="number" name="floor" placeholder="1"></div>
+      <div class="field" style="width:130px"><label>Type</label>
+        <select name="room_type"><option value="shared">Shared</option><option value="single">Single</option></select>
+      </div>
+      <div class="field" style="width:110px"><label>Beds</label><input type="number" name="bed_count" value="4" min="0" max="30"></div>
+      <div class="field"><button class="btn success" type="submit">Add room</button></div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

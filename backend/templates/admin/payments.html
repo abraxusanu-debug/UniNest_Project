@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Payments</h1>
+  <div class="btn-row">
+    <a class="btn sm {{ 'primary' if not req_status else '' }}" href="{{ url_for('web.admin_payments') }}">Pending</a>
+    <a class="btn sm {{ 'primary' if req_status == 'confirmed' else '' }}" href="{{ url_for('web.admin_payments', status='confirmed') }}">Confirmed</a>
+    <a class="btn sm {{ 'primary' if req_status == 'failed' else '' }}" href="{{ url_for('web.admin_payments', status='failed') }}">Not accepted</a>
+  </div>
+</div>
+<p class="page-sub">Review student payments and keep accommodation confirmations accurate and current.</p>
+
+<div class="card settings-card">
+  <div class="card-title">Daraja configuration</div>
+  <form method="post" action="{{ url_for('web.admin_payment_settings') }}" class="stack">
+    <div class="inline-toggle">
+      <label>
+        <input type="checkbox" name="mpesa_enabled" {% if mpesa_settings.mpesa_enabled %}checked{% endif %}>
+        Enable M-Pesa payments
+      </label>
+    </div>
+    <div class="grid cols-2" style="gap:12px; align-items:end;">
+      <div class="field">
+        <label for="mpesa_consumer_key">Consumer key</label>
+        <input type="text" id="mpesa_consumer_key" name="mpesa_consumer_key" value="{{ mpesa_settings.mpesa_consumer_key or '' }}" placeholder="Enter Daraja consumer key">
+      </div>
+      <div class="field">
+        <label for="mpesa_consumer_secret">Consumer secret</label>
+        <input type="text" id="mpesa_consumer_secret" name="mpesa_consumer_secret" value="{{ mpesa_settings.mpesa_consumer_secret or '' }}" placeholder="Enter Daraja consumer secret">
+      </div>
+      <div class="field">
+        <label for="mpesa_shortcode">Shortcode</label>
+        <input type="text" id="mpesa_shortcode" name="mpesa_shortcode" value="{{ mpesa_settings.mpesa_shortcode or '' }}" placeholder="e.g. 174379">
+      </div>
+      <div class="field">
+        <label for="mpesa_passkey">Passkey</label>
+        <input type="text" id="mpesa_passkey" name="mpesa_passkey" value="{{ mpesa_settings.mpesa_passkey or '' }}" placeholder="M-Pesa passkey">
+      </div>
+      <div class="field" style="grid-column:1 / -1;">
+        <label for="mpesa_callback_url">Callback URL</label>
+        <input type="url" id="mpesa_callback_url" name="mpesa_callback_url" value="{{ mpesa_settings.mpesa_callback_url or '' }}" placeholder="https://your-domain.example.com/mpesa/callback">
+      </div>
+      <div class="field">
+        <label for="mpesa_environment">Environment</label>
+        <select id="mpesa_environment" name="mpesa_environment">
+          <option value="sandbox" {% if mpesa_settings.mpesa_environment == 'sandbox' %}selected{% endif %}>Sandbox</option>
+          <option value="production" {% if mpesa_settings.mpesa_environment == 'production' %}selected{% endif %}>Production</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="submit">Save Daraja settings</button>
+    </div>
+  </form>
+</div>
+
+<div class="card settings-card">
+  <div class="card-title">Email configuration</div>
+  <form method="post" action="{{ url_for('web.admin_payment_settings') }}" class="stack">
+    <div class="grid cols-2" style="gap:12px; align-items:end;">
+      <div class="field">
+        <label for="site_email">Site email</label>
+        <input type="email" id="site_email" name="site_email" value="{{ email_settings.site_email or '' }}" placeholder="noreply@yourdomain.com">
+      </div>
+      <div class="field">
+        <label for="site_email_password">Email password / app password</label>
+        <input type="password" id="site_email_password" name="site_email_password" value="{{ email_settings.site_email_password or '' }}" placeholder="SMTP app password">
+      </div>
+      <div class="field">
+        <label for="smtp_server">SMTP server</label>
+        <input type="text" id="smtp_server" name="smtp_server" value="{{ email_settings.smtp_server or '' }}" placeholder="smtp.gmail.com">
+      </div>
+      <div class="field">
+        <label for="smtp_port">SMTP port</label>
+        <input type="number" id="smtp_port" name="smtp_port" value="{{ email_settings.smtp_port or 587 }}" min="1" max="465">
+      </div>
+      <div class="field">
+        <label for="sender_name">Sender name</label>
+        <input type="text" id="sender_name" name="sender_name" value="{{ email_settings.sender_name or 'UniNest' }}">
+      </div>
+      <div class="field">
+        <label for="use_tls">Use TLS</label>
+        <select id="use_tls" name="use_tls">
+          <option value="0" {% if not email_settings.use_tls %}selected{% endif %}>No</option>
+          <option value="1" {% if email_settings.use_tls %}selected{% endif %}>Yes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="require_email_verification">Email verification required</label>
+        <select id="require_email_verification" name="require_email_verification">
+          <option value="0" {% if not email_settings.require_email_verification %}selected{% endif %}>Off</option>
+          <option value="1" {% if email_settings.require_email_verification %}selected{% endif %}>On</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="submit">Save email settings</button>
+    </div>
+  </form>
+</div>
+
+<div class="card tight">
+  {% if payments %}
+  <table class="table">
+    <tr><th>Reference</th><th>Student</th><th>Amount</th><th>Method</th><th>Allocation</th><th>Status</th><th>Recorded</th><th class="right">Action</th></tr>
+    {% for p in payments %}
+    <tr>
+      <td class="nowrap"><code class="small">{{ p.reference }}</code></td>
+      <td><strong>{{ p.student.name }}</strong><div class="muted small">{{ p.student.registration_no or "" }}</div></td>
+      <td class="num nowrap">{{ p.currency }} {{ "%.2f"|format(p.amount) }}</td>
+      <td>{{ p.method|capitalize }}</td>
+      <td>{{ p.allocation_id and "#" ~ p.allocation_id or "—" }}</td>
+      <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
+      <td class="muted small nowrap">{{ p.created_at.strftime("%d %b %Y") }}</td>
+      <td class="right nowrap">
+        {% if p.status == "pending" %}
+        <div class="btn-row" style="justify-content:flex-end">
+          <form method="post"><input type="hidden" name="payment_id" value="{{ p.id }}"><input type="hidden" name="payment_action" value="confirm"><button class="btn sm success" type="submit">Confirm</button></form>
+          <form method="post"><input type="hidden" name="payment_id" value="{{ p.id }}"><input type="hidden" name="payment_action" value="fail"><button class="btn sm danger" type="submit" data-confirm="Mark payment {{ p.reference }} as not accepted?">Reject</button></form>
+        </div>
+        {% else %}<span class="muted small">{{ p.confirmed_at and p.confirmed_at.strftime("%d %b") or "—" }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No payments for this filter.</div>
+  {% endif %}
+</div>
+{% endblock %}

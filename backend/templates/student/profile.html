@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1 class="page-title">My profile</h1>
+<p class="page-sub">Keep your record up to date — the hostel office uses this during verification.</p>
+
+<div class="card" style="max-width:620px">
+  <div class="btn-row mb-16" style="justify-content: space-between">
+    <div>
+      <strong>{{ student.registration_no or "No registration number" }}</strong>
+      <div class="muted small">{{ student.user.full_name }}</div>
+    </div>
+    <span class="pill {{ student.verification_status }}">{{ student.verification_status }}</span>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="stack">
+    <div class="field">
+      <label for="full_name">Display name</label>
+      <input type="text" id="full_name" name="full_name" value="{{ student.user.full_name or '' }}">
+    </div>
+    <div class="field">
+      <label for="profile_image">Profile image</label>
+      <input type="file" id="profile_image" name="profile_image" accept="image/*">
+      <input type="url" name="profile_image_url" placeholder="Or paste an image URL" value="{{ student.user.profile_image or '' }}">
+    </div>
+    <div class="grid cols-2" style="gap:12px">
+      <div class="field">
+        <label for="registration_no">Registration number</label>
+        <input type="text" id="registration_no" name="registration_no" value="{{ student.registration_no or '' }}">
+      </div>
+      <div class="field">
+        <label for="year_of_study">Year of study</label>
+        <select id="year_of_study" name="year_of_study">
+          <option value="1" {% if student.year_of_study == 1 %}selected{% endif %}>1</option>
+          <option value="2" {% if student.year_of_study == 2 %}selected{% endif %}>2</option>
+          <option value="3" {% if student.year_of_study == 3 %}selected{% endif %}>3</option>
+          <option value="4" {% if student.year_of_study == 4 %}selected{% endif %}>4</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid cols-2" style="gap:12px">
+      <div class="field">
+        <label for="program">Programme</label>
+        <input type="text" id="program" name="program" value="{{ student.program or '' }}">
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="text" id="phone" name="phone" value="{{ student.phone or '' }}">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" type="submit">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

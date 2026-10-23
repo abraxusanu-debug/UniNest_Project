@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Students</h1>
+  <div class="btn-row">
+    <a class="btn sm {{ 'primary' if not filter_status else '' }}" href="{{ url_for('web.admin_students') }}">All</a>
+    <a class="btn sm {{ 'primary' if filter_status == 'unverified' else '' }}" href="{{ url_for('web.admin_students', status='unverified') }}">Unverified</a>
+    <a class="btn sm {{ 'primary' if filter_status == 'verified' else '' }}" href="{{ url_for('web.admin_students', status='verified') }}">Verified</a>
+  </div>
+</div>
+<p class="page-sub">Verification confirms the student is enrolled before they can apply for accommodation.</p>
+
+<div class="card tight">
+  {% if students %}
+  <table class="table">
+    <tr><th>Name</th><th>Registration</th><th>Programme</th><th>Year</th><th>Phone</th><th>Status</th><th class="right">Action</th></tr>
+    {% for s in students %}
+    <tr>
+      <td><strong>{{ s.user.full_name }}</strong><div class="muted small">{{ s.user.email }}</div></td>
+      <td class="nowrap">{{ s.registration_no or "—" }}</td>
+      <td>{{ s.program or "—" }}</td>
+      <td>{{ s.year_of_study or "—" }}</td>
+      <td class="nowrap">{{ s.phone or "—" }}</td>
+      <td><span class="pill {{ s.verification_status }}">{{ s.verification_status }}</span></td>
+      <td class="right nowrap">
+        <form method="post" action="{{ url_for('web.admin_verify_student', student_id=s.id) }}" style="display:inline">
+          <input type="hidden" name="action" value="{{ 'unverify' if s.verification_status == 'verified' else 'verify' }}">
+          {% if s.verification_status == 'verified' %}
+            <button class="btn sm" type="submit" data-confirm="Unverify {{ s.user.full_name }}? They will not be able to apply until re-verified.">Unverify</button>
+          {% else %}
+            <button class="btn sm success" type="submit">Verify</button>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No students found for this filter.</div>
+  {% endif %}
+</div>
+{% endblock %}

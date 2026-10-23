@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1 class="page-title">Administration dashboard</h1>
+<p class="page-sub">At a glance: applications waiting on you, beds in use and money recorded.</p>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Applications</div><div class="value">{{ summary.applications.pending + summary.applications.under_review }}</div><div class="hint">{{ summary.applications.pending }} pending · {{ summary.applications.under_review }} in review</div></div>
+  <div class="stat"><div class="label">Students</div><div class="value">{{ students_count }}</div><div class="hint">{{ unverified }} awaiting verification</div></div>
+  <div class="stat"><div class="label">Occupancy</div><div class="value">{{ summary.occupancy.occupancy_rate }}%</div><div class="hint">{{ summary.occupancy.beds_occupied }} / {{ summary.occupancy.beds_total }} beds</div></div>
+  <div class="stat"><div class="label">Payments</div><div class="value">{{ summary.payments.pending_count }}</div><div class="hint">pending confirmation ({{ summary.payments.currency }} {{ "%.2f"|format(summary.payments.pending_total) }})</div></div>
+</div>
+
+<div class="grid cols-2 mt-16">
+  <div class="card">
+    <div class="card-title">Applications by status</div>
+    <div class="bar-chart">
+      {% for key in ["pending", "under_review", "approved", "rejected"] %}
+      <div class="bar-row">
+        <div class="bar-label">{{ key|replace('_',' ') }}</div>
+        {% set mx = [summary.applications.pending, summary.applications.under_review, summary.applications.approved, summary.applications.rejected]|max or 1 %}
+        <div class="bar-track"><div class="bar-fill" style="width: {{ (100 * summary.applications[key] / mx)|round }}%"></div></div>
+        <div class="bar-value">{{ summary.applications[key] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <a class="btn primary mt-16" href="{{ url_for('web.admin_applications') }}">Review applications →</a>
+  </div>
+  <div class="card">
+    <div class="card-title">Anything needing action</div>
+    <table class="table">
+      <tr><th>Area</th><th>Count</th><th></th></tr>
+      <tr><td>Students to verify</td><td class="num">{{ unverified }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_students') }}">Open</a></td></tr>
+      <tr><td>Payments to confirm</td><td class="num">{{ summary.payments.pending_count }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_payments') }}">Open</a></td></tr>
+      <tr><td>Approved, not allocated</td><td class="num">{{ summary.applications.approved }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_applications', status='approved') }}">Open</a></td></tr>
+      <tr><td>Open maintenance</td><td class="num">{{ maintenance_open|default(0) }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_maintenance') }}">Open</a></td></tr>
+    </table>
+  </div>
+</div>
+{% endblock %}

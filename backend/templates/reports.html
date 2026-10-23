@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h1 class="page-title">Reports</h1>
+<p class="page-sub">Occupancy, allocation, payment and vacancy reports for the hostel office and university management.</p>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Occupancy</div><div class="value">{{ s.occupancy.occupancy_rate }}%</div><div class="hint">{{ s.occupancy.beds_occupied }} / {{ s.occupancy.beds_total }} beds</div></div>
+  <div class="stat"><div class="label">Free beds</div><div class="value">{{ s.occupancy.beds_available }}</div><div class="hint">{{ s.occupancy.beds_maintenance }} under maintenance</div></div>
+  <div class="stat"><div class="label">Active residents</div><div class="value">{{ s.allocations.active }}</div><div class="hint">{{ s.allocations.checked_in }} checked in</div></div>
+  <div class="stat"><div class="label">Payments</div><div class="value">{{ s.payments.currency }} {{ "%.0f"|format(s.payments.confirmed_total) }}</div><div class="hint">{{ s.payments.confirmed_count }} confirmed · {{ s.payments.pending_count }} pending</div></div>
+</div>
+
+<div class="card mt-16">
+  <div class="btn-row" style="justify-content: space-between">
+    <div class="card-title" style="margin:0">Occupancy by hostel</div>
+    <a class="btn sm" href="{{ url_for('web.reports_occupancy_csv') }}">Download CSV</a>
+  </div>
+  <div class="mt-8"></div>
+  <table class="table">
+    <tr><th>Hostel</th><th>Rooms</th><th>Beds</th><th>Occupied</th><th>Free</th><th>Maintenance</th><th>Rate</th><th style="width:160px"></th></tr>
+    {% for r in occupancy %}
+    <tr>
+      <td><strong>{{ r.hostel }}</strong></td>
+      <td class="num">{{ r.rooms }}</td>
+      <td class="num">{{ r.beds_total }}</td>
+      <td class="num">{{ r.beds_occupied }}</td>
+      <td class="num">{{ r.beds_available }}</td>
+      <td class="num">{{ r.beds_maintenance }}</td>
+      <td class="num nowrap"><strong>{{ r.occupancy_rate }}%</strong></td>
+      <td><div class="bar-track"><div class="bar-fill" style="height:8px; width: {{ r.occupancy_rate }}%"></div></div></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <div class="card-title">Vacancies</div>
+    <div class="muted small mb-8">{{ vacancies_total }} free beds overall</div>
+    {% if vacancies %}
+    <table class="table">
+      <tr><th>Location</th><th class="num">Free</th><th>Bed numbers</th></tr>
+      {% for v in vacancies %}
+      <tr><td>{{ v.location }}</td><td class="num">{{ v.free_beds }}</td><td class="muted small">{{ v.bed_numbers }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <div class="empty">No free beds right now.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Payments by method</div>
+    <div class="bar-chart">
+      {% set pm = paym.by_method %}
+      {% if pm %}
+        {% for method, d in pm.items() %}
+        {% set mx = pm.values()|map(attribute='count')|max or 1 %}
+        <div class="bar-row">
+          <div class="bar-label">{{ method|capitalize }}</div>
+          <div class="bar-track"><div class="bar-fill" style="width: {{ (100 * d.count / mx)|round }}%"></div></div>
+          <div class="bar-value">{{ d.count }}</div>
+        </div>
+        <div class="bar-row" style="grid-template-columns:130px 1fr 110px">
+          <div class="bar-label" style="font-weight:400; color:var(--muted); font-size:12px">confirmed total</div>
+          <div></div>
+          <div class="bar-value">{{ d.currency }} {{ "%.2f"|format(d.total) }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No payments recorded.</div>
+      {% endif %}
+    </div>
+    <div class="mt-16">
+      <div class="card-title">By semester</div>
+      <table class="table">
+        <tr><th>Semester</th><th class="num">Records</th><th class="num">Confirmed total</th></tr>
+        {% for semester, d in paym.by_semester.items() %}
+        <tr><td>{{ semester }}</td><td class="num">{{ d.count }}</td><td class="num">{{ s.payments.currency }} {{ "%.2f"|format(d.confirmed_total) }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="btn-row" style="justify-content: space-between">
+    <div class="card-title" style="margin:0">All allocations</div>
+    <a class="btn sm" href="{{ url_for('web.reports_allocations_csv') }}">Download CSV</a>
+  </div>
+</div>
+{% endblock %}

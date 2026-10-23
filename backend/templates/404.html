@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center; margin-top:60px; padding:44px 24px;">
+  <div style="font-size:52px; font-weight:800; letter-spacing:-0.03em">404</div>
+  <p class="muted">That page doesn't exist.</p>
+  <a class="btn primary" href="{{ url_for('web.dashboard') if current_user else url_for('web.index') }}">Go home</a>
+</div>
+{% endblock %}

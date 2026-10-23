@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Availability{% endblock %}
+{% block content %}
+<h1 class="page-title">Bed availability</h1>
+<p class="page-sub">Live view of free beds across all hostels.</p>
+
+{% if hostels %}
+{% for h in hostels %}
+<div class="card">
+  <div class="btn-row" style="justify-content: space-between">
+    <div class="card-title" style="margin:0">{{ h.name }} <span class="muted small">· {{ h.gender|capitalize }} · {{ h.location }}</span></div>
+    <div class="btn-row">
+      <span class="pill available">{{ h.beds_available }} free</span>
+      <span class="pill occupied">{{ h.beds_occupied }} occupied</span>
+    </div>
+  </div>
+  <div class="bar-chart mt-8">
+    <div class="bar-row">
+      <div class="bar-label">Occupancy</div>
+      <div class="bar-track"><div class="bar-fill" style="width: {{ h.occupancy_rate }}%"></div></div>
+      <div class="bar-value">{{ h.occupancy_rate }}%</div>
+    </div>
+  </div>
+</div>
+
+<div class="card tight">
+  <table class="table">
+    <thead>
+      <tr><th>Room</th><th>Floor</th><th>Type</th><th>Beds</th><th>Free</th><th>Bed numbers (free)</th></tr>
+    </thead>
+    <tbody>
+      {% for r in h.rooms %}
+      <tr>
+        <td><strong>{{ r.number }}</strong></td>
+        <td>{{ r.floor or "—" }}</td>
+        <td>{{ r.room_type|capitalize }}</td>
+        <td class="num">{{ r.beds_total }}</td>
+        <td class="num">{{ r.beds_available }}</td>
+        <td class="muted small">
+          {% for b in r.beds if b.status == "available" %}{{ b.bed_number }}{% if not loop.last %}, {% endif %}{% endfor %}
+          {% if r.beds_available == 0 %}<em>full</em>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty">No hostels published yet.</div>
+{% endif %}
+{% endblock %}

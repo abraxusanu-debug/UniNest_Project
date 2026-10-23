@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}UniNest{% endblock %} · UniNest</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/uni.css') }}">
+</head>
+<body data-theme="light">
+  <nav class="nav" aria-label="Main navigation">
+    <div class="nav-inner">
+      <div class="nav-brand-group">
+        <a class="brand" href="{{ url_for('web.index') }}">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" role="img" aria-label="UniNest logo">
+              <defs>
+                <linearGradient id="uninestGradient" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#4f46e5"/>
+                  <stop offset="100%" stop-color="#7c3aed"/>
+                </linearGradient>
+              </defs>
+              <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#uninestGradient)"/>
+              <path d="M18 29L32 18L46 29" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 29V42H42V29" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M28 42V34H36V42" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 42H44" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="25" cy="23" r="2.5" fill="#dbeafe"/>
+              <circle cx="39" cy="23" r="2.5" fill="#dbeafe"/>
+            </svg>
+          </span>
+          <span class="brand-text">UniNest</span>
+        </a>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+      <div class="nav-links" id="site-nav">
+        {% if current_user %}
+          {% if current_user.role == 'student' %}
+            <a href="{{ url_for('web.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('web.my_availability') }}">Availability</a>
+            <a href="{{ url_for('web.my_payments') }}">Payments</a>
+            <a href="{{ url_for('web.my_maintenance') }}">Maintenance</a>
+            <a href="{{ url_for('web.my_notifications') }}">Notifications{% if unread_count %} <span class="badge nav-badge">{{ unread_count }}</span>{% endif %}</a>
+            <a href="{{ url_for('web.my_profile') }}">Profile</a>
+          {% elif current_user.role == 'admin' %}
+            <a href="{{ url_for('web.admin_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('web.admin_students') }}">Students</a>
+            <a href="{{ url_for('web.admin_hostels') }}">Hostels</a>
+            <a href="{{ url_for('web.admin_applications') }}">Applications</a>
+            <a href="{{ url_for('web.admin_allocations') }}">Allocations</a>
+            <a href="{{ url_for('web.admin_payments') }}">Payments</a>
+            <a href="{{ url_for('web.admin_maintenance') }}">Maintenance</a>
+            <a href="{{ url_for('web.reports') }}">Reports</a>
+          {% else %}
+            <a href="{{ url_for('web.management_dashboard') }}">Overview</a>
+            <a href="{{ url_for('web.my_availability') }}">Availability</a>
+            <a href="{{ url_for('web.admin_allocations') }}">Allocations</a>
+            <a href="{{ url_for('web.reports') }}">Reports</a>
+          {% endif %}
+        {% endif %}
+
+        <div class="nav-menu-actions">
+          {% if current_user %}
+            <button class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+            <a class="btn sm" href="{{ url_for('web.logout') }}">Logout</a>
+          {% else %}
+            <button class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+            <a class="btn sm" href="{{ url_for('web.login') }}">Log in</a>
+            <a class="btn sm primary" href="{{ url_for('web.register') }}">Create account</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="nav-user">
+        {% if current_user %}
+          <span class="name">{{ current_user.full_name.split()[0] }}</span>
+          <span class="muted small">{{ current_user.role|capitalize }}</span>
+          <button class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+          <a class="btn sm" href="{{ url_for('web.logout') }}">Logout</a>
+        {% else %}
+          <button class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+          <a class="btn sm" href="{{ url_for('web.login') }}">Log in</a>
+          <a class="btn sm primary" href="{{ url_for('web.register') }}">Create account</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <div class="flash-stack">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <main class="container {% block container_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+    <div class="footer">UniNest · campus living, simplified {{ current_user.role|default('', true) and '· ' + current_user.role|capitalize }}</div>
+  </main>
+
+  <script>
+    (function () {
+      var storedTheme = localStorage.getItem('uninest-theme');
+      var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = storedTheme || (systemDark ? 'dark' : 'light');
+      document.body.setAttribute('data-theme', theme);
+
+      document.querySelectorAll('.theme-toggle').forEach(function (button) {
+        button.textContent = theme === 'dark' ? '☀️' : '🌙';
+        button.addEventListener('click', function () {
+          var next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          document.body.setAttribute('data-theme', next);
+          localStorage.setItem('uninest-theme', next);
+          button.textContent = next === 'dark' ? '☀️' : '🌙';
+        });
+      });
+    }());
+
+    var menuToggle = document.querySelector('.menu-toggle');
+    var nav = document.querySelector('.nav');
+    var navLinks = document.querySelector('.nav-links');
+
+    if (menuToggle && nav && navLinks) {
+      menuToggle.addEventListener('click', function () {
+        var isOpen = nav.classList.toggle('open');
+        menuToggle.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      navLinks.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          nav.classList.remove('open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!nav.contains(event.target)) {
+          nav.classList.remove('open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-confirm]');
+      if (el) {
+        e.preventDefault();
+        if (window.confirm(el.getAttribute('data-confirm'))) {
+          var f = document.createElement('form');
+          f.method = 'POST';
+          f.action = el.getAttribute('href') || el.formAction;
+          document.body.appendChild(f);
+          f.submit();
+        }
+      }
+    });
+
+    document.querySelectorAll('table.table').forEach(function (table) {
+      if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'table-wrap';
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
+
+    setTimeout(function () {
+      document.querySelectorAll('.flash').forEach(function (f) {
+        f.style.transition = 'opacity .6s';
+        f.style.opacity = '0';
+        setTimeout(function () { f.remove(); }, 700);
+      });
+    }, 6000);
+    var here = location.pathname;
+    document.querySelectorAll('.nav-links a').forEach(function (a) {
+      if (a.getAttribute('href') === here) a.classList.add('active');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="page-title">My dashboard</h1>
+{% if student.verification_status != 'verified' %}
+<div class="flash error" style="margin-bottom:14px">Your account is not verified yet. The hostel office will verify your enrollment record before you can apply for accommodation.</div>
+{% endif %}
+<p class="page-sub">Your accommodation journey: application → approval → allocation → payment → check-in.</p>
+
+<div class="grid cols-4">
+  <div class="stat">
+    <div class="label">Applications</div>
+    <div class="value">{{ app_row and app_row.status|replace('_',' ')|title or "None" }}</div>
+    <div class="hint">{{ app_row and "ID #" ~ app_row.id or "No active application" }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">My room</div>
+    <div class="value">{{ allocation and allocation.bed.room.number or "—" }}</div>
+    <div class="hint">{{ allocation and allocation.bed.room.hostel.name ~ " · bed " ~ allocation.bed.bed_number or "Not allocated yet" }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Payments</div>
+    <div class="value">{{ payments|length }}</div>
+    <div class="hint">{{ allocation and (allocation.paid and "Paid & confirmed" or "Payment pending") or "— " }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Maintenance</div>
+    <div class="value">{{ maintenance|selectattr("status", "ne", "resolved")|list|length }}</div>
+    <div class="hint">Open requests</div>
+  </div>
+</div>
+
+<div class="grid cols-2 mt-16" style="align-items:start">
+  <div class="card">
+    <div class="card-title">Application status</div>
+    {% if app_row %}
+      <dl class="detail-grid">
+        <dt>Status</dt><dd><span class="pill {{ app_row.status }}">{{ app_row.status|replace('_',' ') }}</span></dd>
+        <dt>Preferred hostel</dt><dd>{{ app_row.preferred_hostel.name if app_row.preferred_hostel else "No preference" }}</dd>
+        <dt>Room preference</dt><dd>{{ app_row.room_preference|capitalize }}</dd>
+        <dt>Submitted</dt><dd class="nowrap">{{ app_row.created_at.strftime("%d %b %Y, %H:%M") }}</dd>
+        {% if app_row.review_notes %}<dt>Review note</dt><dd>{{ app_row.review_notes }}</dd>{% endif %}
+      </dl>
+    {% else %}
+      <div class="empty">No application yet. Start by applying for hostel accommodation.</div>
+      <a class="btn primary mt-8" href="{{ url_for('web.my_apply') }}">Apply now</a>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Accommodation</div>
+    {% if allocation %}
+      <dl class="detail-grid">
+        <dt>Hostel</dt><dd>{{ allocation.bed.room.hostel.name }}</dd>
+        <dt>Room / Bed</dt><dd>{{ allocation.bed.room.number }} · bed {{ allocation.bed.bed_number }}</dd>
+        <dt>Status</dt><dd><span class="pill {{ allocation.status }}">{{ allocation.status|replace('_',' ') }}</span></dd>
+        <dt>Payment</dt><dd>{{ allocation.paid and "Paid" or "Not paid" }}{% if allocation.accommodation_confirmed %} · confirmed{% endif %}</dd>
+        {% if allocation.check_in_date %}<dt>Checked in</dt><dd>{{ allocation.check_in_date.strftime("%d %b %Y") }}</dd>{% endif %}
+      </dl>
+    {% else %}
+      <div class="empty">No allocation yet. Once your application is approved, the hostel office assigns you a bed here.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if allocation_other %}
+<div class="card">
+  <div class="card-title">History</div>
+  <table class="table">
+    <tr><th>Hostel</th><th>Room</th><th>Bed</th><th>Status</th></tr>
+    {% for a in allocation_other %}
+    <tr><td>{{ a.bed.room.hostel.name }}</td><td>{{ a.bed.room.number }}</td><td>{{ a.bed.bed_number }}</td><td><span class="pill {{ a.status }}">{{ a.status|replace('_',' ') }}</span></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

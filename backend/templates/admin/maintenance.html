@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Maintenance{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Maintenance requests</h1>
+  <div class="btn-row">
+    <a class="btn sm {{ 'primary' if not req_status else '' }}" href="{{ url_for('web.admin_maintenance') }}">Open</a>
+    <a class="btn sm {{ 'primary' if req_status == 'in_progress' else '' }}" href="{{ url_for('web.admin_maintenance', status='in_progress') }}">In progress</a>
+    <a class="btn sm {{ 'primary' if req_status == 'resolved' else '' }}" href="{{ url_for('web.admin_maintenance', status='resolved') }}">Resolved</a>
+  </div>
+</div>
+<p class="page-sub">Move requests through their lifecycle and notify students by resolving with a note.</p>
+
+<div class="card tight">
+  {% if requests %}
+  <table class="table">
+    <tr><th>Issue</th><th>Student</th><th>Room</th><th>Priority</th><th>Status</th><th>Filed</th><th class="right">Action</th></tr>
+    {% for r in requests %}
+    <tr>
+      <td><strong>{{ r.title }}</strong><div class="muted small" style="max-width:220px">{{ r.description or "" }}</div></td>
+      <td class="nowrap">{{ r.student.name }}</td>
+      <td>{{ r.room and r.room.hostel ~ " · " ~ r.room.room | default("—", true) }}</td>
+      <td><span class="pill {{ r.priority }}">{{ r.priority }}</span></td>
+      <td><span class="pill {{ r.status }}">{{ r.status|replace('_',' ') }}</span></td>
+      <td class="muted small nowrap">{{ r.created_at.strftime("%d %b") }}</td>
+      <td class="right nowrap">
+        {% if r.status == "submitted" %}
+        <form method="post"><input type="hidden" name="request_id" value="{{ r.id }}"><input type="hidden" name="status" value="in_progress"><button class="btn sm" type="submit">Start</button></form>
+        <form method="post" style="margin-top:6px" class="inline-form"><input type="hidden" name="request_id" value="{{ r.id }}"><input type="hidden" name="status" value="resolved"><button class="btn sm success" type="submit" data-confirm="Resolve '{{ r.title }}' with no note?">Resolve</button></form>
+        {% elif r.status == "in_progress" %}
+        <div class="btn-row" style="justify-content:flex-end">
+          <form method="post" class="inline-form">
+            <input type="hidden" name="request_id" value="{{ r.id }}">
+            <input type="hidden" name="status" value="resolved">
+            <div class="field" style="width:170px"><input type="text" name="resolution_note" placeholder="Resolution note (optional)"></div>
+            <button class="btn sm success" type="submit">Resolve</button>
+          </form>
+        </div>
+        {% else %}
+        <span class="muted small">{{ r.resolution_note or ("resolved " ~ (r.resolved_at.strftime("%d %b") if r.resolved_at else "")) }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No maintenance requests for this filter.</div>
+  {% endif %}
+</div>
+{% endblock %}

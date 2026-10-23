@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Applications{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Applications</h1>
+  <div class="btn-row">
+    {% for st in ["pending", "under_review", "approved", "allocated", "all"] %}
+    <a class="btn sm {{ 'primary' if status == st else '' }}" href="{{ url_for('web.admin_applications', status=st) }}">{{ st|replace('_',' ')|title }}</a>
+    {% endfor %}
+  </div>
+</div>
+<p class="page-sub">
+  {% if status == "approved" %}Approved applicants: assign a free bed to allocate their room.
+  {% elif status == "pending" %}New applications: move them to review, approve or reject.
+  {% else %}All applications in the selected state.{% endif %}
+</p>
+
+<div class="card tight">
+  {% if applications %}
+  <table class="table">
+    <tr><th>Student</th><th>Preference</th><th>Notes</th><th>Filed</th><th>Status</th><th class="right">Actions</th></tr>
+    {% for a in applications %}
+    <tr>
+      <td>
+        <strong>{{ a.student.name }}</strong>
+        <div class="muted small">{{ a.student.registration_no or a.student.email }}</div>
+      </td>
+      <td class="nowrap">{{ a.preferred_hostel or "Any" }} · {{ a.room_preference }}</td>
+      <td class="small muted" style="max-width:180px">{{ a.notes or "—" }}</td>
+      <td class="muted small nowrap">{{ a.created_at.strftime("%d %b") }}</td>
+      <td><span class="pill {{ a.status }}">{{ a.status|replace('_',' ') }}</span></td>
+      <td class="right">
+        {% if a.status == "pending" %}
+        <div class="btn-row" style="justify-content:flex-end">
+          <form method="post"><input type="hidden" name="application_id" value="{{ a.id }}"><input type="hidden" name="review_action" value="under_review"><button class="btn sm" type="submit">Review</button></form>
+          <form method="post"><input type="hidden" name="application_id" value="{{ a.id }}"><input type="hidden" name="review_action" value="approve"><button class="btn sm success" type="submit">Approve</button></form>
+          <form method="post"><input type="hidden" name="application_id" value="{{ a.id }}"><input type="hidden" name="review_action" value="reject"><button class="btn sm danger" type="submit" data-confirm="Reject {{ a.student.name }}'s application?">Reject</button></form>
+        </div>
+        {% elif a.status == "under_review" %}
+        <div class="btn-row" style="justify-content:flex-end">
+          <form method="post"><input type="hidden" name="application_id" value="{{ a.id }}"><input type="hidden" name="review_action" value="approve"><button class="btn sm success" type="submit">Approve</button></form>
+          <form method="post"><input type="hidden" name="application_id" value="{{ a.id }}"><input type="hidden" name="review_action" value="reject"><input type="hidden" name="review_notes" value="Not eligible at this time"><button class="btn sm danger" type="submit" data-confirm="Reject {{ a.student.name }}'s application?">Reject</button></form>
+        </div>
+        {% elif a.status == "approved" %}
+        <form method="post" class="inline-form" style="justify-content:flex-end">
+          <input type="hidden" name="application_id" value="{{ a.id }}">
+          <div class="field">
+            <select name="bed_id" required>
+              <option value="">— choose free bed —</option>
+              {% for b in free_beds %}<option value="{{ b.id }}">{{ b.label }}</option>{% endfor %}
+            </select>
+          </div>
+          <input type="hidden" name="allocate_action" value="allocate">
+          <button class="btn sm primary" type="submit">Allocate</button>
+        </form>
+        {% elif a.status == "allocated" %}
+        <span class="muted small">allocated (#{{ a.allocation_id }})</span>
+        {% else %}
+        <span class="muted small">no actions</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No applications with status “{{ status }}”.</div>
+  {% endif %}
+</div>
+{% endblock %}

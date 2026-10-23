@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1 class="page-title">Management overview</h1>
+<p class="page-sub">Read-only monitoring of accommodation operations. Detailed drills are available to the hostel office.</p>
+
+<div class="grid cols-4">
+  <div class="stat"><div class="label">Occupancy</div><div class="value">{{ summary.occupancy.occupancy_rate }}%</div><div class="hint">{{ summary.occupancy.beds_occupied }} / {{ summary.occupancy.beds_total }} beds</div></div>
+  <div class="stat"><div class="label">Free beds</div><div class="value">{{ summary.occupancy.beds_available }}</div><div class="hint">available now</div></div>
+  <div class="stat"><div class="label">Applications</div><div class="value">{{ summary.applications.pending + summary.applications.under_review }}</div><div class="hint">awaiting office action</div></div>
+  <div class="stat"><div class="label">Confirmed payments</div><div class="value">{{ summary.payments.currency }} {{ "%.0f"|format(summary.payments.confirmed_total) }}</div><div class="hint">{{ summary.payments.confirmed_count }} records</div></div>
+</div>
+
+<div class="btn-row mt-16">
+  <a class="btn primary" href="{{ url_for('web.reports') }}">Open full reports</a>
+  <a class="btn" href="{{ url_for('web.my_availability') }}">View availability</a>
+  <a class="btn" href="{{ url_for('web.admin_allocations') }}">View allocations</a>
+</div>
+{% endblock %}

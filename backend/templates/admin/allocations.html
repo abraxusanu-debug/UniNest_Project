@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Allocations{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Allocations</h1>
+  <a class="btn sm" href="{{ url_for('web.admin_applications', status='approved') }}">Allocate a new application →</a>
+</div>
+<p class="page-sub">Record check-ins and check-outs, or cancel allocations. Cancelling frees the bed and returns the application to approved.</p>
+
+<div class="card tight">
+  {% if allocations %}
+  <table class="table">
+    <tr><th>Student</th><th>Hostel</th><th>Room / Bed</th><th>Status</th><th>Paid</th><th>Dates</th><th class="right">Actions</th></tr>
+    {% for a in allocations %}
+    <tr>
+      <td><strong>{{ a.student.name }}</strong><div class="muted small">{{ a.student.registration_no or a.student.email }}</div></td>
+      <td>{{ a.bed.hostel }}</td>
+      <td class="nowrap">{{ a.bed.room }} · bed {{ a.bed.bed_number }}</td>
+      <td><span class="pill {{ a.status }}">{{ a.status|replace('_',' ') }}</span></td>
+      <td>{% if a.paid %}<span class="pill confirmed">paid</span>{% else %}<span class="muted small">not paid</span>{% endif %}</td>
+      <td class="muted small nowrap">
+        {{ a.allocated_at.strftime("%d %b") | default("—", true) }}
+        {% if a.check_in_date %} → in {{ a.check_in_date }}{% endif %}
+        {% if a.check_out_date %} → out {{ a.check_out_date }}{% endif %}
+      </td>
+      <td class="right nowrap">
+        <div class="btn-row" style="justify-content:flex-end">
+          {% if a.status == "allocated" %}
+          <form method="post" action="{{ url_for('web.admin_allocation_action', allocation_id=a.id, action='check-in') }}"><button class="btn sm success" type="submit">Check in</button></form>
+          {% endif %}
+          {% if a.status in ["allocated", "checked_in"] %}
+          <form method="post" action="{{ url_for('web.admin_allocation_action', allocation_id=a.id, action='check-out') }}"><button class="btn sm" type="submit" data-confirm="Check out {{ a.student.name }}? The bed is freed once checked out.">Check out</button></form>
+          <form method="post" action="{{ url_for('web.admin_allocation_action', allocation_id=a.id, action='cancel') }}"><button class="btn sm danger" type="submit" data-confirm="Cancel this allocation? The bed is freed.">Cancel</button></form>
+          {% else %}
+          <span class="muted small">—</span>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No allocations yet.</div>
+  {% endif %}
+</div>
+{% endblock %}
