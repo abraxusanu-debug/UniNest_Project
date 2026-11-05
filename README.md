@@ -9,7 +9,9 @@ by Victor Ndirangu (25/03338). See:
 - `proposal/` — original 10-slide deck from the phone's Download folder (+ untouched copy)
 - `deliverables/UniNest_10_Slide_Project_Proposal_CORRECTED.pptx` — deck with the budget total corrected (KSh 4,900) and a starting APA reference list on slide 10
 - `deliverables/UniNest_Proposal_Revised.md` — revised written proposal
-- `deliverables/UniNest_SRS.md` — requirements specification
+- `deliverables/UniNest_SRS.md` — requirements specification (Markdown source)
+- `deliverables/UniNest_SRS.pdf` — formatted SRS (51 pages, A4)
+- `deliverables/build_srs_pdf.py` — ReportLab build script for the SRS PDF
 - `deliverables/User_Manual.md` — user guide for students, admins, management
 - `docs/ARCHITECTURE.md` — component and data-flow overview
 
@@ -48,6 +50,16 @@ backend/
   tests/            pytest suite (API + web journey)
   config.py  run.py backend/uninest.db
 ```
+
+## SRS PDF
+
+The SRS PDF is generated from `deliverables/UniNest_SRS.md` with ReportLab and the DejaVu fonts:
+
+```bash
+python3 deliverables/build_srs_pdf.py
+```
+
+Output: `deliverables/UniNest_SRS.pdf`.
 
 ## Testing
 
