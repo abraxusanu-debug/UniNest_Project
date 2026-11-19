@@ -44,14 +44,16 @@ def create_app(config_object=Config):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+    from app import models  # noqa: F401  (ensure models register with SQLAlchemy)
+
     with app.app_context():
+        db.create_all()
         _ensure_schema_compatibility()
+        _ensure_deployment_accounts()
 
     from flask_cors import CORS
 
     CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-    from app import models  # noqa: F401  (ensure models register with SQLAlchemy)
 
     from app.routes.auth import bp as auth_bp
     from app.routes.students import bp as students_bp
@@ -104,8 +106,12 @@ def create_app(config_object=Config):
         return jsonify({"error": "method_not_allowed", "message": "check the HTTP method"}), 405
 
     @app.errorhandler(500)
-    def internal(_e):
-        return jsonify({"error": "internal_error", "message": "something went wrong"}), 500
+    def internal(error):
+        app.logger.exception("Unhandled internal server error", exc_info=error)
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "internal_error", "message": "the server encountered an unexpected error"}), 500
+        flash("The server encountered an unexpected error. Please try again.", "error")
+        return render_template("404.html"), 500
 
     return app
 
@@ -157,4 +163,22 @@ def _ensure_schema_compatibility():
         if "accommodation_required_amount" not in existing["mpesa_settings"]:
             db.session.execute(db.text("ALTER TABLE mpesa_settings ADD COLUMN accommodation_required_amount NUMERIC(12, 2)"))
 
+    db.session.commit()
+
+
+def _ensure_deployment_accounts():
+    if os.environ.get("UNINEST_BOOTSTRAP_ADMIN", "false").strip().lower() not in ("1", "true", "yes", "on"):
+        return
+
+    from app.models import User
+
+    email = (os.environ.get("UNINEST_ADMIN_EMAIL") or "admin@uninest.ac.ke").strip().lower()
+    password = os.environ.get("UNINEST_ADMIN_PASSWORD") or "Admin@123"
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return
+
+    user = User(email=email, full_name="UniNest Administrator", role="admin", email_verified=True, is_active=True)
+    user.set_password(password)
+    db.session.add(user)
     db.session.commit()

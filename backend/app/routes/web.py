@@ -102,7 +102,12 @@ def dashboard():
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = student_service.authenticate(_form("email"), _form("password"))
+        try:
+            user = student_service.authenticate(_form("email"), _form("password"))
+        except Exception:
+            current_app.logger.exception("Web login authentication failed")
+            flash("Authentication is temporarily unavailable. Please try again.", "error")
+            return redirect(url_for("web.login"))
         if not user:
             settings = SiteSettings.get_or_create()
             if settings.require_email_verification:

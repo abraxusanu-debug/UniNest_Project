@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
+from flask import current_app
 
 from app.extensions import db
 from app.models import Student, User
@@ -37,7 +38,12 @@ def login():
     if not data.get("email") or not data.get("password"):
         return jsonify({"error": "bad_request", "message": "email and password required"}), 400
 
-    user = student_service.authenticate(data["email"], data["password"])
+    try:
+        user = student_service.authenticate(data["email"], data["password"])
+    except Exception:
+        current_app.logger.exception("Login authentication failed")
+        return jsonify({"error": "authentication_unavailable", "message": "authentication service could not access the database"}), 503
+
     if user:
         token = create_access_token(identity=str(user.id), additional_claims={"role": user.role, "email": user.email})
         return jsonify({"token": token, "user": user.to_dict()})
