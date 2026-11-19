@@ -14,6 +14,7 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = 60 * 60 * 12
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    PUBLIC_BASE_URL = os.environ.get("UNINEST_PUBLIC_BASE_URL", "")
 
 
 class TestConfig(Config):

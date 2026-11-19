@@ -34,6 +34,7 @@
       <tr><td>Payments to confirm</td><td class="num">{{ summary.payments.pending_count }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_payments') }}">Open</a></td></tr>
       <tr><td>Approved, not allocated</td><td class="num">{{ summary.applications.approved }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_applications', status='approved') }}">Open</a></td></tr>
       <tr><td>Open maintenance</td><td class="num">{{ maintenance_open|default(0) }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_maintenance') }}">Open</a></td></tr>
+      <tr><td>Maintenance staff accounts</td><td class="num">{{ maintenance_staff|default(0) }}</td><td class="right"><a class="btn sm" href="{{ url_for('web.admin_maintenance_accounts') }}">Open</a></td></tr>
     </table>
   </div>
 </div>

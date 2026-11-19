@@ -1,7 +1,7 @@
 from datetime import datetime
 from app.extensions import db
 
-ROLES = ("student", "admin", "management")
+ROLES = ("student", "admin", "management", "maintenance")
 
 
 class User(db.Model):

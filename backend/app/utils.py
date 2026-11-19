@@ -20,7 +20,7 @@ def is_admin():
 
 def is_staff():
     verify_jwt_in_request()
-    return get_jwt().get("role") in ("admin", "management")
+    return get_jwt().get("role") in ("admin", "management", "maintenance")
 
 
 def role_required(*roles):

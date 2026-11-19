@@ -128,6 +128,33 @@ def test_admin_can_configure_mpesa_daraja_settings(client):
     assert b"Daraja" in res.data
 
 
+def test_admin_can_setup_maintenance_worker_account(client):
+    _login(client, ADMIN)
+
+    res = client.post(
+        "/admin/maintenance/accounts",
+        data={"full_name": "Marcus Tech", "email": "maintenance@test.ac.ke", "password": "Maint@123"},
+        follow_redirects=False,
+    )
+    assert res.status_code == 302
+
+    with client.application.app_context():
+        worker = User.query.filter_by(email="maintenance@test.ac.ke").first()
+        assert worker is not None
+        assert worker.role == "maintenance"
+        assert worker.check_password("Maint@123")
+
+    res = client.post(
+        "/login",
+        data={"email": "maintenance@test.ac.ke", "password": "Maint@123"},
+        follow_redirects=False,
+    )
+    assert res.status_code == 302 and "/dashboard" in res.headers["Location"]
+
+    res = client.get("/admin/maintenance", follow_redirects=False)
+    assert res.status_code == 200
+
+
 def test_student_full_web_journey(client):
     client.post(
         "/register",

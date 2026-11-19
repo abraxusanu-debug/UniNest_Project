@@ -48,6 +48,11 @@
           <option value="production" {% if mpesa_settings.mpesa_environment == 'production' %}selected{% endif %}>Production</option>
         </select>
       </div>
+      <div class="field">
+        <label for="accommodation_required_amount">Accommodation required amount (KSh)</label>
+        <input type="number" id="accommodation_required_amount" name="accommodation_required_amount" value="{{ mpesa_settings.accommodation_required_amount if mpesa_settings.accommodation_required_amount is not none else '' }}" min="0.01" step="0.01" placeholder="e.g. 14500">
+        <small class="muted">If set, confirmed linked payments must cumulatively reach this amount before accommodation is confirmed.</small>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn primary" type="submit">Save Daraja settings</button>

@@ -8,6 +8,7 @@ from app.services.common import notify
 
 VALID_ROOM_PREFS = ("any", "single", "shared")
 ACTIVE_STATUSES = ("pending", "under_review", "approved", "allocated")
+WITHDRAWABLE_STATUSES = ("pending", "under_review")
 
 
 def create_application(student, room_preference="any", notes=None, preferred_hostel_id=None):
@@ -83,5 +84,21 @@ def review_application(app_id, action, notes=None, reviewer_id=None):
     if action == "reject" and notes:
         message = f"{message} {notes}"
     notify(app_row.student.user_id, "application", f"Application {new_status.replace('_', ' ')}", message)
+    db.session.commit()
+    return app_row
+
+
+def withdraw_application(application_id, student_id):
+    app_row = db.session.get(Application, application_id)
+    if not app_row:
+        raise NotFound("application not found")
+    if app_row.student_id != student_id:
+        raise Forbidden("you cannot withdraw another student's application")
+    if app_row.status not in WITHDRAWABLE_STATUSES:
+        raise Conflict("only pending or under-review applications can be withdrawn")
+    app_row.status = "withdrawn"
+    app_row.review_notes = "Withdrawn by the student"
+    app_row.reviewed_at = datetime.utcnow()
+    notify(app_row.student.user_id, "application", "Application withdrawn", "Your application was withdrawn successfully.")
     db.session.commit()
     return app_row

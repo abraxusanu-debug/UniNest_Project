@@ -13,7 +13,7 @@ class Payment(db.Model):
     reference = db.Column(db.String(40), unique=True, nullable=False, index=True)
     student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False, index=True)
     allocation_id = db.Column(db.Integer, db.ForeignKey("allocations.id"))
-    amount = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
     currency = db.Column(db.String(5), default="KSh")
     method = db.Column(db.String(20), nullable=False, default="mpesa")
     phone_number = db.Column(db.String(30))
@@ -50,13 +50,14 @@ class Payment(db.Model):
                 "registration_no": self.student.registration_no,
             },
             "allocation_id": self.allocation_id,
-            "amount": self.amount,
+            "amount": str(self.amount),
             "currency": self.currency,
             "method": self.method,
             "phone_number": self.phone_number,
             "semester": self.semester,
             "status": self.status,
             "description": self.description,
+            "confirmed_by": self.confirmed_by,
             "confirmed_at": self.confirmed_at.isoformat() if self.confirmed_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

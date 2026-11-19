@@ -65,7 +65,7 @@ Output: `deliverables/UniNest_SRS.pdf`.
 
 ```bash
 cd backend
-.venv/bin/python -m pytest tests -q          # 10 tests (API + web)
+../.venv/bin/python -m pytest tests -q       # API + web regression suite
 ```
 
 ## Stack

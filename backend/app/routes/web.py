@@ -37,7 +37,11 @@ def template_context():
 
 def current_user():
     uid = session.get("uid")
-    return db.session.get(User, uid) if uid else None
+    user = db.session.get(User, uid) if uid else None
+    if user and not user.is_active:
+        session.clear()
+        return None
+    return user
 
 
 def login_required(roles=None):
@@ -48,7 +52,7 @@ def login_required(roles=None):
             if not user:
                 return redirect(url_for("web.login"))
             if roles and user.role not in roles:
-                flash("You do not have access to that area.", "error")
+                flash("You do not have access to this area.", "error")
                 return redirect(url_for("web.dashboard"))
             return fn(*args, user=user, **kwargs)
 
@@ -91,7 +95,7 @@ def dashboard():
     user = current_user()
     if not user:
         return redirect(url_for("web.login"))
-    target = {"student": "web.my_dashboard", "admin": "web.admin_dashboard", "management": "web.management_dashboard"}
+    target = {"student": "web.my_dashboard", "admin": "web.admin_dashboard", "management": "web.management_dashboard", "maintenance": "web.admin_maintenance"}
     return redirect(url_for(target[user.role]))
 
 
@@ -180,8 +184,8 @@ def reset_password(token):
 
     if request.method == "POST":
         password = (request.form.get("password") or "").strip()
-        if len(password) < 6:
-            flash("Password must be at least 6 characters long.", "error")
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.", "error")
             return redirect(request.url)
         user.set_password(password)
         user.reset_token = None
@@ -239,6 +243,17 @@ def my_apply(user):
         flash("You already have an active application.", "error")
         return redirect(url_for("web.my_dashboard"))
     return render_template("student/apply.html", hostels=hostel_service.list_hostels())
+
+
+@bp.post("/my/applications/<int:app_id>/withdraw")
+@login_required(["student"])
+def withdraw_application(app_id, user):
+    try:
+        application_service.withdraw_application(app_id, user.student.id)
+        flash("Application withdrawn successfully.", "success")
+    except ServiceError as e:
+        return _error_redirect(e)
+    return redirect(url_for("web.my_dashboard"))
 
 
 @bp.get("/my/availability")
@@ -362,12 +377,14 @@ def admin_dashboard(user):
     s = report_service.summary()
     students = student_service.list_students()
     open_maintenance = maintenance_service.list_requests(None)
+    maintenance_staff = User.query.filter_by(role="maintenance").count()
     return render_template(
         "admin/dashboard.html",
         summary=s,
         students_count=len(students),
         unverified=sum(1 for x in students if x.verification_status != "verified"),
         maintenance_open=sum(1 for r in open_maintenance if r.status != "resolved"),
+        maintenance_staff=maintenance_staff,
     )
 
 
@@ -578,6 +595,17 @@ def admin_payment_settings(user):
     settings.mpesa_passkey = _form("mpesa_passkey", "").strip()
     settings.mpesa_callback_url = _form("mpesa_callback_url", "").strip()
     settings.mpesa_environment = _form("mpesa_environment", "sandbox").strip() or "sandbox"
+    required_amount = _form("accommodation_required_amount", "").strip()
+    if required_amount:
+        try:
+            from decimal import Decimal, InvalidOperation
+            settings.accommodation_required_amount = Decimal(required_amount).quantize(Decimal("0.01"))
+            if settings.accommodation_required_amount <= 0:
+                settings.accommodation_required_amount = None
+        except (InvalidOperation, ValueError):
+            settings.accommodation_required_amount = None
+    else:
+        settings.accommodation_required_amount = None
     db.session.add(settings)
 
     email_settings = SiteSettings.get_or_create()
@@ -594,8 +622,23 @@ def admin_payment_settings(user):
     return redirect(url_for("web.admin_payments"))
 
 
-@bp.route("/admin/maintenance", methods=["GET", "POST"])
+@bp.route("/admin/maintenance/accounts", methods=["GET", "POST"])
 @login_required(["admin"])
+def admin_maintenance_accounts(user):
+    if request.method == "POST":
+        try:
+            student_service.create_maintenance_account(_form("email"), _form("password"), _form("full_name"))
+            flash("Maintenance worker account created successfully.", "success")
+        except ServiceError as e:
+            return _error_redirect(e)
+        return redirect(url_for("web.admin_maintenance_accounts"))
+
+    workers = User.query.filter_by(role="maintenance").order_by(User.created_at.desc()).all()
+    return render_template("admin/maintenance_accounts.html", workers=workers)
+
+
+@bp.route("/admin/maintenance", methods=["GET", "POST"])
+@login_required(["admin", "maintenance"])
 def admin_maintenance(user):
     if request.method == "POST":
         try:

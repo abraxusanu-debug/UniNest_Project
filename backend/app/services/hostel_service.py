@@ -66,11 +66,19 @@ def update_hostel(hostel_id, data):
 
 
 def delete_hostel(hostel_id):
+    from app.models import Allocation, Application
+
     hostel = db.session.get(Hostel, hostel_id)
     if not hostel:
         raise NotFound("hostel not found")
     if hostel.beds_occupied > 0:
         raise Conflict("cannot delete a hostel with occupied beds")
+
+    bed_ids = [bed.id for room in hostel.rooms for bed in room.beds]
+    if Application.query.filter(Application.preferred_hostel_id == hostel.id).first():
+        raise Conflict("cannot delete a hostel with application history")
+    if bed_ids and Allocation.query.filter(Allocation.bed_id.in_(bed_ids)).first():
+        raise Conflict("cannot delete a hostel with allocation history")
     db.session.delete(hostel)
     db.session.commit()
 
@@ -117,11 +125,16 @@ def update_room(room_id, data):
 
 
 def delete_room(room_id):
+    from app.models import Allocation
+
     room = db.session.get(Room, room_id)
     if not room:
         raise NotFound("room not found")
     if room.beds_occupied > 0:
         raise Conflict("cannot delete a room with occupied beds")
+    bed_ids = [bed.id for bed in room.beds]
+    if bed_ids and Allocation.query.filter(Allocation.bed_id.in_(bed_ids)).first():
+        raise Conflict("cannot delete a room with allocation history")
     db.session.delete(room)
     db.session.commit()
 

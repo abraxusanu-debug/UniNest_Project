@@ -1,6 +1,7 @@
 import os
+import secrets
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
 
 from config import Config
 from app.extensions import db, migrate, jwt
@@ -18,9 +19,33 @@ def create_app(config_object=Config):
     app.config.from_object(config_object)
     app.json.sort_keys = False
 
+    @app.context_processor
+    def csrf_context():
+        if not session.get("csrf_token"):
+            session["csrf_token"] = secrets.token_urlsafe(32)
+        return {"csrf_token": session["csrf_token"]}
+
+    @app.before_request
+    def protect_web_forms():
+        if app.testing:
+            return None
+        if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+            return None
+        if request.path.startswith("/api/"):
+            return None
+        if not request.form:
+            return None
+        supplied = request.form.get("csrf_token")
+        if not supplied or not session.get("csrf_token") or not secrets.compare_digest(supplied, session["csrf_token"]):
+            abort(403)
+        return None
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+    with app.app_context():
+        _ensure_schema_compatibility()
 
     from flask_cors import CORS
 
@@ -82,10 +107,6 @@ def create_app(config_object=Config):
     def internal(_e):
         return jsonify({"error": "internal_error", "message": "something went wrong"}), 500
 
-    with app.app_context():
-        db.create_all()
-        _ensure_schema_compatibility()
-
     return app
 
 
@@ -94,27 +115,29 @@ def _ensure_schema_compatibility():
 
     inspector = inspect(db.engine)
     existing = {}
-    for table_name in ("users", "hostels", "payments", "site_settings"):
+    table_names = ("users", "hostels", "payments", "site_settings", "mpesa_settings")
+    for table_name in table_names:
         try:
             existing[table_name] = {c["name"] for c in inspector.get_columns(table_name)}
         except Exception:
             existing[table_name] = set()
 
-    if "profile_image" not in existing["users"]:
-        db.session.execute(db.text("ALTER TABLE users ADD COLUMN profile_image VARCHAR(500)"))
-    if "email_verified" not in existing["users"]:
-        db.session.execute(db.text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 1"))
-    if "verification_token" not in existing["users"]:
-        db.session.execute(db.text("ALTER TABLE users ADD COLUMN verification_token VARCHAR(255)"))
-    if "reset_token" not in existing["users"]:
-        db.session.execute(db.text("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255)"))
+    changed = False
 
-    if "image_url" not in existing["hostels"]:
-        db.session.execute(db.text("ALTER TABLE hostels ADD COLUMN image_url VARCHAR(500)"))
-    if "amenities" not in existing["hostels"]:
-        db.session.execute(db.text("ALTER TABLE hostels ADD COLUMN amenities TEXT DEFAULT ''"))
-    if "phone_number" not in existing["payments"]:
-        db.session.execute(db.text("ALTER TABLE payments ADD COLUMN phone_number VARCHAR(30)"))
+    for table_name, column_name, column_type in (
+        ("users", "profile_image", "VARCHAR(500)"),
+        ("users", "email_verified", "BOOLEAN DEFAULT 1"),
+        ("users", "verification_token", "VARCHAR(255)"),
+        ("users", "reset_token", "VARCHAR(255)"),
+        ("hostels", "image_url", "VARCHAR(500)"),
+        ("hostels", "amenities", "TEXT DEFAULT ''"),
+        ("payments", "phone_number", "VARCHAR(30)"),
+    ):
+        if table_name not in inspector.get_table_names():
+            continue
+        if column_name not in existing[table_name]:
+            db.session.execute(db.text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+            changed = True
 
     if "site_settings" in existing and existing["site_settings"]:
         required_site_columns = {
@@ -129,5 +152,9 @@ def _ensure_schema_compatibility():
         for col_name, col_type in required_site_columns.items():
             if col_name not in existing["site_settings"]:
                 db.session.execute(db.text(f"ALTER TABLE site_settings ADD COLUMN {col_name} {col_type}"))
+
+    if "mpesa_settings" in existing and existing["mpesa_settings"]:
+        if "accommodation_required_amount" not in existing["mpesa_settings"]:
+            db.session.execute(db.text("ALTER TABLE mpesa_settings ADD COLUMN accommodation_required_amount NUMERIC(12, 2)"))
 
     db.session.commit()

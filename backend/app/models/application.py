@@ -3,7 +3,7 @@ from app.extensions import db
 from sqlalchemy.orm import validates
 from app.models.allocation import Allocation
 
-APP_STATUSES = ("pending", "under_review", "approved", "rejected", "allocated")
+APP_STATUSES = ("pending", "under_review", "approved", "rejected", "allocated", "withdrawn", "completed")
 
 
 class Application(db.Model):

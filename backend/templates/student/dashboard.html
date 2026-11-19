@@ -41,6 +41,15 @@
         <dt>Submitted</dt><dd class="nowrap">{{ app_row.created_at.strftime("%d %b %Y, %H:%M") }}</dd>
         {% if app_row.review_notes %}<dt>Review note</dt><dd>{{ app_row.review_notes }}</dd>{% endif %}
       </dl>
+      {% if app_row.status in ['pending', 'under_review'] %}
+      <form method="post" action="{{ url_for('web.withdraw_application', app_id=app_row.id) }}" class="mt-8">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn danger sm" type="submit" data-confirm="Withdraw this application?">Withdraw application</button>
+      </form>
+      {% endif %}
+      {% if app_row.status in ['withdrawn', 'rejected', 'completed'] %}
+      <a class="btn primary sm mt-8" href="{{ url_for('web.my_apply') }}">Apply again</a>
+      {% endif %}
     {% else %}
       <div class="empty">No application yet. Start by applying for hostel accommodation.</div>
       <a class="btn primary mt-8" href="{{ url_for('web.my_apply') }}">Apply now</a>

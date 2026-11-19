@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Maintenance staff accounts{% endblock %}
+{% block content %}
+<div class="section-row">
+  <h1 class="page-title" style="margin:0">Maintenance staff accounts</h1>
+  <a class="btn sm" href="{{ url_for('web.admin_maintenance') }}">Back to maintenance</a>
+</div>
+<p class="page-sub">Create login accounts for technicians and contractors working on maintenance requests.</p>
+
+<div class="grid cols-2 mt-16">
+  <div class="card">
+    <div class="card-title">Create account</div>
+    <form method="post" class="stack">
+      <div class="field">
+        <label for="full_name">Full name</label>
+        <input id="full_name" name="full_name" type="text" placeholder="e.g. Marcus Tech" required>
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" placeholder="tech@uninest.ac.ke" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="At least 8 characters" minlength="8" required>
+      </div>
+      <button class="btn primary" type="submit">Create maintenance account</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Existing accounts</div>
+    {% if workers %}
+    <table class="table">
+      <tr><th>Name</th><th>Email</th><th>Created</th></tr>
+      {% for worker in workers %}
+      <tr>
+        <td>{{ worker.full_name }}</td>
+        <td>{{ worker.email }}</td>
+        <td class="muted small">{{ worker.created_at.strftime('%d %b %Y') if worker.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <div class="empty">No maintenance worker accounts created yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

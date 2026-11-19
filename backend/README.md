@@ -30,7 +30,7 @@ templates/        index, auth/{login,register}, student/{dashboard,apply,availab
                   maintenance,notifications,profile}, admin/{dashboard,students,hostels,applications,
                   allocations,payments,maintenance}, management/dashboard, reports, 404, base
 static/css/uni.css  design system (white theme, subtle shadows, badges, bar charts)
-tests/            conftest.py, test_api.py, test_web.py  (10 pytest tests)
+tests/            conftest.py, test_api.py, test_web.py  (API and web pytest suite)
 config.py         Config (dev) / TestConfig (in-memory sqlite)
 run.py            entrypoint (port 5001)
 ```

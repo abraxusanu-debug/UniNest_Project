@@ -14,6 +14,7 @@ class MpesaSettings(db.Model):
     mpesa_passkey = db.Column(db.String(255), nullable=True)
     mpesa_callback_url = db.Column(db.String(255), nullable=True)
     mpesa_environment = db.Column(db.String(20), default="sandbox", nullable=False)
+    accommodation_required_amount = db.Column(db.Numeric(12, 2), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

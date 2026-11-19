@@ -12,7 +12,7 @@ def _error(e):
 
 
 @bp.post("")
-@role_required("student", "admin")
+@role_required("student", "admin", "maintenance")
 def create_request():
     user = get_current_user()
     data = request.get_json(silent=True) or {}
@@ -55,7 +55,7 @@ def list_requests():
 
 
 @bp.post("/<int:req_id>/status")
-@role_required("admin")
+@role_required("admin", "maintenance")
 def update_status(req_id):
     data = request.get_json(silent=True) or {}
     try:

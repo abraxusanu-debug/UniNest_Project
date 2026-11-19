@@ -85,6 +85,8 @@ def check_out(allocation_id):
     allocation.status = "checked_out"
     allocation.check_out_date = date.today()
     allocation.bed.status = "available"
+    if allocation.application:
+        allocation.application.status = "completed"
     notify(allocation.student.user_id, "check_out", "Checked out", "Your check-out has been recorded and your bed is now free.")
     db.session.commit()
     return allocation

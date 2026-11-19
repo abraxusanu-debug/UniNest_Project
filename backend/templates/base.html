@@ -52,7 +52,10 @@
             <a href="{{ url_for('web.admin_allocations') }}">Allocations</a>
             <a href="{{ url_for('web.admin_payments') }}">Payments</a>
             <a href="{{ url_for('web.admin_maintenance') }}">Maintenance</a>
+            <a href="{{ url_for('web.admin_maintenance_accounts') }}">Staff accounts</a>
             <a href="{{ url_for('web.reports') }}">Reports</a>
+          {% elif current_user.role == 'maintenance' %}
+            <a href="{{ url_for('web.admin_maintenance') }}">Maintenance</a>
           {% else %}
             <a href="{{ url_for('web.management_dashboard') }}">Overview</a>
             <a href="{{ url_for('web.my_availability') }}">Availability</a>
@@ -152,6 +155,11 @@
           var f = document.createElement('form');
           f.method = 'POST';
           f.action = el.getAttribute('href') || el.formAction;
+          var csrf = document.createElement('input');
+          csrf.type = 'hidden';
+          csrf.name = 'csrf_token';
+          csrf.value = '{{ csrf_token }}';
+          f.appendChild(csrf);
           document.body.appendChild(f);
           f.submit();
         }
@@ -176,6 +184,16 @@
     var here = location.pathname;
     document.querySelectorAll('.nav-links a').forEach(function (a) {
       if (a.getAttribute('href') === here) a.classList.add('active');
+    });
+
+    document.querySelectorAll('form[method="post"], form:not([method])').forEach(function (form) {
+      if (!form.querySelector('input[name="csrf_token"]')) {
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+      }
     });
   </script>
 </body>

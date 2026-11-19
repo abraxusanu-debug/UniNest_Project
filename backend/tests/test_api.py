@@ -91,6 +91,83 @@ def test_payment_confirm_updates_allocation(client, app, tokens):
     assert alloc["paid"] is True and alloc["accommodation_confirmed"] is True
 
 
+def test_partial_payment_does_not_confirm_accommodation(client, app, tokens):
+    from decimal import Decimal
+    from tests.helpers import seed_hostel_and_bed
+    from app.models import MpesaSettings
+    from app.extensions import db
+
+    alloc_id = seed_hostel_and_bed(client, app, tokens)
+    with app.app_context():
+        settings = MpesaSettings.get_or_create()
+        settings.accommodation_required_amount = Decimal("14500.00")
+        db.session.commit()
+
+    pay = client.post(
+        "/api/payments",
+        headers=A(tokens["student"]),
+        json={"amount": 1000, "method": "mpesa", "allocation_id": alloc_id},
+    )
+    confirm = client.post(f"/api/payments/{pay.json['id']}/confirm", headers=A(tokens["admin"]))
+    assert confirm.status_code == 200
+
+    alloc = client.get(f"/api/allocations/{alloc_id}", headers=A(tokens["student"])).json
+    assert alloc["paid"] is False
+    assert alloc["accommodation_confirmed"] is False
+    assert confirm.json["status"] == "confirmed"
+
+
+def test_rejected_payment_has_processing_audit(client, app, tokens):
+    from tests.helpers import seed_hostel_and_bed
+
+    alloc_id = seed_hostel_and_bed(client, app, tokens)
+    pay = client.post(
+        "/api/payments",
+        headers=A(tokens["student"]),
+        json={"amount": 1000, "method": "mpesa", "allocation_id": alloc_id},
+    )
+    reject = client.post(f"/api/payments/{pay.json['id']}/fail", headers=A(tokens["admin"]))
+    assert reject.status_code == 200
+    assert reject.json["status"] == "failed"
+    assert reject.json["confirmed_at"] is not None
+
+
+def test_password_and_notification_email_policy(client, monkeypatch):
+    sent = []
+
+    from app.services import email_service
+
+    monkeypatch.setattr(
+        email_service,
+        "send_email",
+        lambda subject, body, recipient, **kwargs: sent.append((subject, body, recipient)) or True,
+    )
+
+    short = client.post(
+        "/api/auth/register",
+        json={"email": "short@test.ac.ke", "password": "Short1", "full_name": "Short Password"},
+    )
+    assert short.status_code == 400
+
+    created = client.post(
+        "/api/auth/register",
+        json={"email": "email@test.ac.ke", "password": "Strong@123", "full_name": "Email User"},
+    )
+    assert created.status_code == 201
+
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "email@test.ac.ke", "password": "Strong@123"},
+    )
+    assert login.status_code == 200
+
+    subjects = [item[0] for item in sent]
+    assert "Welcome to UniNest" in subjects
+    assert "UniNest login alert" in subjects
+    assert all("password_hash" not in item[1] for item in sent)
+    assert all("KSh" not in item[1] for item in sent)
+
+
 def test_reports_and_guards(client, tokens):
     ok = client.get("/api/reports/summary", headers=A(tokens["admin"]))
     assert ok.status_code == 200 and "occupancy" in ok.json

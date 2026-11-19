@@ -2,6 +2,7 @@ import base64
 import json
 import secrets
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from urllib import error, request
 
 from app.extensions import db
@@ -88,10 +89,11 @@ def record_payment(student_id, amount, method="mpesa", allocation_id=None, semes
     if amount is None:
         raise Conflict("amount is required")
     try:
-        amount = float(amount)
+        amount = Decimal(str(amount))
         if amount <= 0:
-            raise ValueError
-    except (TypeError, ValueError):
+            raise InvalidOperation
+        amount = amount.quantize(Decimal("0.01"))
+    except (TypeError, ValueError, InvalidOperation):
         raise Conflict("amount must be a positive number") from None
 
     if method != "mpesa":
@@ -110,7 +112,7 @@ def record_payment(student_id, amount, method="mpesa", allocation_id=None, semes
         reference=make_reference(),
         student_id=student_id,
         allocation_id=allocation_id,
-        amount=round(amount, 2),
+        amount=amount,
         method=method,
         phone_number=(phone_number or "").strip() or None,
         semester=semester or "2026 Semester 1",
@@ -159,7 +161,9 @@ def initiate_mpesa_payment(payment_id, phone_number=None, settings=None):
         payment.confirmed_at = datetime.utcnow()
         if payment.allocation_id:
             allocation = db.session.get(Allocation, payment.allocation_id)
-            if allocation and allocation.status in ("allocated", "checked_in"):
+            required = settings.accommodation_required_amount
+            sufficient = required is None or _confirmed_total(payment) >= required
+            if allocation and allocation.status in ("allocated", "checked_in") and sufficient:
                 allocation.paid = True
                 allocation.accommodation_confirmed = True
         notify(
@@ -192,6 +196,24 @@ def list_payments(student_id=None, status=None):
     return query.order_by(Payment.created_at.desc()).all()
 
 
+def _confirmed_total(payment):
+    if not payment.allocation_id:
+        return payment.amount
+
+    settings = MpesaSettings.get_or_create()
+    required = settings.accommodation_required_amount
+    if required is None:
+        return payment.amount
+
+    confirmed_payments = Payment.query.filter(
+        Payment.allocation_id == payment.allocation_id,
+        Payment.status == "confirmed",
+        Payment.id != payment.id,
+    ).all()
+    total = sum((confirmed.amount for confirmed in confirmed_payments), Decimal("0"))
+    return total + payment.amount
+
+
 def confirm(payment_id, admin_id):
     payment = db.session.get(Payment, payment_id)
     if not payment:
@@ -205,7 +227,10 @@ def confirm(payment_id, admin_id):
 
     if payment.allocation_id:
         allocation = db.session.get(Allocation, payment.allocation_id)
-        if allocation and allocation.status in ("allocated", "checked_in"):
+        settings = MpesaSettings.get_or_create()
+        required = settings.accommodation_required_amount
+        sufficient = required is None or _confirmed_total(payment) >= required
+        if allocation and allocation.status in ("allocated", "checked_in") and sufficient:
             allocation.paid = True
             allocation.accommodation_confirmed = True
 
@@ -213,7 +238,7 @@ def confirm(payment_id, admin_id):
         payment.student.user_id,
         "payment",
         "Payment confirmed",
-        f"Payment {payment.reference} of {payment.currency} {payment.amount:.2f} has been confirmed. Accommodation confirmed.",
+        f"Payment {payment.reference} has been recorded as confirmed. Accommodation remains subject to the office sufficiency rule.",
     )
     db.session.commit()
     return payment
@@ -227,6 +252,7 @@ def fail(payment_id, admin_id):
         raise Conflict(f"payment is already {payment.status}")
     payment.status = "failed"
     payment.confirmed_by = admin_id
+    payment.confirmed_at = datetime.utcnow()
     notify(payment.student.user_id, "payment", "Payment not accepted", f"Payment {payment.reference} was not accepted. Please contact the hostel office.")
     db.session.commit()
     return payment

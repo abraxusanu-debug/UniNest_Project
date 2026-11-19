@@ -7,7 +7,7 @@ class Student(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
-    registration_no = db.Column(db.String(40), index=True)
+    registration_no = db.Column(db.String(40), unique=True, index=True)
     program = db.Column(db.String(120))
     year_of_study = db.Column(db.Integer)
     phone = db.Column(db.String(30))

@@ -4,6 +4,9 @@
 <div class="section-row">
   <h1 class="page-title" style="margin:0">Maintenance requests</h1>
   <div class="btn-row">
+    {% if current_user.role == 'admin' %}
+    <a class="btn sm" href="{{ url_for('web.admin_maintenance_accounts') }}">Manage staff accounts</a>
+    {% endif %}
     <a class="btn sm {{ 'primary' if not req_status else '' }}" href="{{ url_for('web.admin_maintenance') }}">Open</a>
     <a class="btn sm {{ 'primary' if req_status == 'in_progress' else '' }}" href="{{ url_for('web.admin_maintenance', status='in_progress') }}">In progress</a>
     <a class="btn sm {{ 'primary' if req_status == 'resolved' else '' }}" href="{{ url_for('web.admin_maintenance', status='resolved') }}">Resolved</a>

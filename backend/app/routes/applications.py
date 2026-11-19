@@ -64,3 +64,13 @@ def review_application(app_id):
     except ServiceError as e:
         return _error(e)
     return jsonify(app_row.to_dict())
+
+
+@bp.post("/<int:app_id>/withdraw")
+@role_required("student")
+def withdraw_application(app_id):
+    try:
+        app_row = application_service.withdraw_application(app_id, get_current_user().student.id)
+    except ServiceError as e:
+        return _error(e)
+    return jsonify(app_row.to_dict())
