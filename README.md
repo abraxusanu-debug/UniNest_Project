@@ -10,10 +10,14 @@ by Victor Ndirangu (25/03338). See:
 - `deliverables/UniNest_10_Slide_Project_Proposal_CORRECTED.pptx` — deck with the budget total corrected (KSh 4,900) and a starting APA reference list on slide 10
 - `deliverables/UniNest_Proposal_Revised.md` — revised written proposal
 - `deliverables/UniNest_SRS.md` — requirements specification (Markdown source)
-- `deliverables/UniNest_SRS.pdf` — formatted SRS (51 pages, A4)
+- `deliverables/UniNest_SRS.pdf` — formatted SRS PDF
 - `deliverables/build_srs_pdf.py` — ReportLab build script for the SRS PDF
-- `deliverables/User_Manual.md` — user guide for students, admins, management
+- `deliverables/UniNest_Final_Submission_Plan.md` — final submission checklist
+- `deliverables/User_Manual.md` — user guide for students, administrators, maintenance staff, and management
+- `deliverables/Presentation_Trainer_Guide.md` — presentation flow and demonstration script
 - `docs/ARCHITECTURE.md` — component and data-flow overview
+
+The original proposal decks remain in `proposal/` as project history. Presentation slides and trainer PDF are separate training deliverables kept outside this GitHub repository.
 
 ## Quick start
 

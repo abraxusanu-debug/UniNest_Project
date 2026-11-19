@@ -2,7 +2,7 @@
 
 **Version:** 2.0  
 **Status:** Final  
-**Date:** 18 November 2026  
+**Date:** 19 November 2026  
 **Project:** Diploma in Information Technology  
 **Student:** Victor Ndirangu (25/03338)
 
@@ -304,15 +304,37 @@ erDiagram
 | FR-49–FR-51 | Report and role-guard tests |
 | NFR-S1–NFR-S7 | Authentication, role, password, lockout, CSRF, and privacy tests |
 
-## 10. Fact-finding appendix
+## 10. Requirements basis
 
-The design inputs are the supplied SRS writing guidance and a final project review. Appendix A and Appendix B evidence from interviews/questionnaires should be completed with:
-- interview role and date, without unnecessary personal or confidential data;
-- questionnaire respondent count and collection date;
-- key findings;
-- mapped requirements P1–P9.
+The requirements are derived from the project proposal, the reviewed project scope, the final implementation, the system architecture, and the acceptance test suite. The proposal defines the need for centralized hostel administration, student applications, allocations, payments, maintenance, and reporting. The implementation and test results confirm the functional behaviour recorded in this SRS.
 
-No interviewees or respondent counts were supplied with the source documents, so fictional or personally identifying counts SHALL NOT be inserted. A final evidence sheet will use anonymized or role-based categories only.
+No interview transcripts or completed questionnaire responses were included with the project source files. Accordingly, this document does not assign sample respondent counts or invent interview findings. P1–P9 remain traceable to the documented process problems, system requirements, implementation modules, and acceptance cases below.
+
+The approved evidence set for this submission is:
+
+| Evidence source | Contribution |
+|---|---|
+| Revised proposal | Project purpose, scope, users, and system objectives |
+| Implemented application | Account, hostel, application, allocation, payment, maintenance, notification, and report behaviour |
+| Architecture document | Component boundaries and shared web/API service rules |
+| User manual | Operational workflows and role responsibilities |
+| Automated test suite | Registration, authentication, lifecycle, payment, report, role, and web journey verification |
+
+## 10.1 Final implementation alignment
+
+- Registration and maintenance-account passwords require at least eight characters; passwords are stored as hashes.
+- Five failed login attempts trigger a fifteen-minute account identifier lockout.
+- Web state-changing forms use session CSRF tokens and reject missing or mismatched tokens.
+- Registration numbers are unique; changing a verified student's registration number resets hostel verification.
+- Applications support pending, under-review, approved, rejected, allocated, withdrawn, and completed states.
+- Cancellation restores the application to approved and frees the bed; check-out completes the application and frees the bed.
+- Payment amounts use Numeric fields and two-decimal arithmetic.
+- Accommodation confirmation uses an office-configured required amount and the sum of confirmed linked payments.
+- Hostel and room deletion is blocked by occupied beds or application/allocation history.
+- JWT authentication and role guards protect API routes; web routes enforce session roles.
+- Management views exclude passwords, reset tokens, verification tokens, and unrelated contact history.
+
+The automated suite covers API and web journeys and passed 17 tests using the isolated SQLite test configuration.
 
 ## 11. Appendices
 

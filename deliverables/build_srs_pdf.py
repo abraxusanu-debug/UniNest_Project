@@ -45,7 +45,18 @@ from reportlab.platypus.tableofcontents import TableOfContents
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "UniNest_SRS.md"
 OUTPUT = HERE / "UniNest_SRS.pdf"
-FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
+FONT_DIR = next(
+    (
+        path
+        for path in (
+            Path("/usr/share/fonts/truetype/dejavu"),
+            Path("/data/data/com.termux/files/usr/share/fonts/TTF"),
+            Path("/data/data/com.termux/files/usr/var/lib/proot-distro/containers/ubuntu/rootfs/usr/share/fonts/truetype/dejavu"),
+        )
+        if (path / "DejaVuSerif.ttf").is_file()
+    ),
+    Path("/usr/share/fonts/truetype/dejavu"),
+)
 
 PAGE_W, PAGE_H = A4
 LAND_W, LAND_H = landscape(A4)
