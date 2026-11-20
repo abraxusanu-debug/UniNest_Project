@@ -49,7 +49,7 @@ def create_app(config_object=Config):
     with app.app_context():
         db.create_all()
         _ensure_schema_compatibility()
-        _ensure_deployment_accounts()
+        _ensure_deployment_accounts(app)
 
     from flask_cors import CORS
 
@@ -166,19 +166,19 @@ def _ensure_schema_compatibility():
     db.session.commit()
 
 
-def _ensure_deployment_accounts():
+def _ensure_deployment_accounts(app):
     if os.environ.get("UNINEST_BOOTSTRAP_ADMIN", "false").strip().lower() not in ("1", "true", "yes", "on"):
         return
 
     from app.models import User
 
-    email = (os.environ.get("UNINEST_ADMIN_EMAIL") or "admin@uninest.ac.ke").strip().lower()
-    password = os.environ.get("UNINEST_ADMIN_PASSWORD") or "Admin@123"
-    user = User.query.filter_by(email=email).first()
-    if user:
+    if User.query.first():
         return
 
-    user = User(email=email, full_name="UniNest Administrator", role="admin", email_verified=True, is_active=True)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
+    bootstrap_flag = os.environ.pop("UNINEST_BOOTSTRAP_ADMIN", None)
+    try:
+        from app.seed import seed
+        seed(app)
+    finally:
+        if bootstrap_flag is not None:
+            os.environ["UNINEST_BOOTSTRAP_ADMIN"] = bootstrap_flag

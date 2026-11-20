@@ -24,8 +24,9 @@ from app.models import (
 )
 
 
-def seed():
-    app = create_app()
+def seed(app=None):
+    if app is None:
+        app = create_app()
     with app.app_context():
         if User.query.first():
             print("database already contains data; seeding skipped")
