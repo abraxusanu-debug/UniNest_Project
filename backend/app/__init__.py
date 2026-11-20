@@ -172,13 +172,35 @@ def _ensure_deployment_accounts(app):
 
     from app.models import User
 
-    if User.query.first():
-        return
+    demo_accounts = (
+        ("admin@uninest.ac.ke", "Asha Kariuki", "admin", "Admin@123"),
+        ("management@uninest.ac.ke", "Dr. Peter Wambua", "management", "Manage@123"),
+        ("miriam.otieno@student.ac.ke", "Miriam Otieno", "student", "Student@123"),
+        ("brian.kimani@student.ac.ke", "Brian Kimani", "student", "Student@123"),
+        ("faith.wanjiku@student.ac.ke", "Faith Wanjiku", "student", "Student@123"),
+        ("david.mwenda@student.ac.ke", "David Mwenda", "student", "Student@123"),
+    )
 
-    bootstrap_flag = os.environ.pop("UNINEST_BOOTSTRAP_ADMIN", None)
-    try:
-        from app.seed import seed
-        seed(app)
-    finally:
-        if bootstrap_flag is not None:
-            os.environ["UNINEST_BOOTSTRAP_ADMIN"] = bootstrap_flag
+    if not User.query.first():
+        bootstrap_flag = os.environ.pop("UNINEST_BOOTSTRAP_ADMIN", None)
+        try:
+            from app.seed import seed
+            seed(app)
+        finally:
+            if bootstrap_flag is not None:
+                os.environ["UNINEST_BOOTSTRAP_ADMIN"] = bootstrap_flag
+
+    changed = False
+    for email, full_name, role, password in demo_accounts:
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            continue
+        user.full_name = full_name
+        user.role = role
+        user.is_active = True
+        user.email_verified = True
+        user.set_password(password)
+        changed = True
+
+    if changed:
+        db.session.commit()
