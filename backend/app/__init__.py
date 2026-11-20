@@ -167,7 +167,8 @@ def _ensure_schema_compatibility():
 
 
 def _ensure_deployment_accounts(app):
-    if os.environ.get("UNINEST_BOOTSTRAP_ADMIN", "false").strip().lower() not in ("1", "true", "yes", "on"):
+    bootstrap_setting = os.environ.get("UNINEST_BOOTSTRAP_ADMIN", "true").strip().lower()
+    if bootstrap_setting in ("0", "false", "no", "off"):
         return
 
     from app.models import User
