@@ -1,9 +1,9 @@
 # UniNest — System Requirements Specification (SRS)
 
-**Version:** 2.0  
-**Status:** Final  
-**Date:** 19 November 2026  
-**Project:** Diploma in Information Technology  
+**Version:** 2.0
+**Status:** Work in Progress
+**Date:** 23 November 2026
+**Project:** Diploma in Information Technology
 **Student:** Victor Ndirangu (25/03338)
 
 ## 1. Introduction
